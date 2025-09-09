@@ -1,13 +1,21 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 3000;
 
 // middlewere
-app.use(cors());
+app.use(cors(
+  {
+    origin:['http://localhost:5173'],
+    credentials:true
+  }
+));
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.tobpnew.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -30,6 +38,20 @@ async function run() {
     const confirmdatabase = client.db("car-doctor").collection("servicesconfirm");
     const products = client.db("car-doctor").collection("products");
 
+    // token JWT
+    app.post("/jwt", async (req, res) => {
+      const userdata = req.body;
+      const token = jwt.sign(userdata, process.env.JWT_SECRET, { expiresIn: "1h" });
+      // console.log(userdata);
+      res
+      .cookie("token",token,{
+        httpOnly:true,
+        secure:false,
+        sameSite: "none"
+      })
+      .send({success:true});
+    });
+
     // read all services data on database Mongobd
     app.get("/services", async (req, res) => {
       const cursor = services.find();
@@ -50,27 +72,37 @@ async function run() {
       const result = await services.findOne(query);
       res.send(result);
     });
-        // add service data on database
-    app.post("/services", async(req,res)=>{
+    // add service data on database
+    app.post("/services", async (req, res) => {
       const confirmdata = req.body;
       const result = await services.insertOne(confirmdata);
       res.send(result);
-    })
+    });
 
     // read all confirm data on database mongodb
-    app.get("/confirm",async(req,res)=>{
-      const email = req.query.email
-      const query = {email:email}
+    app.get("/confirm", async (req, res) => {
+
+      console.log(req.cookies)
+
+      // const email = req.query.email;
+      // const query = { email: email };
+      // or
+      let query = {};
+      if(req.query?.email){
+        query={email: req.query.email}
+      }
+
+
       const result = await confirmdatabase.find(query).toArray();
       res.send(result);
-    })
+    });
 
     // add confirm data on database
-    app.post("/confirm", async(req,res)=>{
+    app.post("/confirm", async (req, res) => {
       const confirmdata = req.body;
       const result = await confirmdatabase.insertOne(confirmdata);
       res.send(result);
-    })
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
