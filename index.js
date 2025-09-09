@@ -82,7 +82,8 @@ async function run() {
     // read all confirm data on database mongodb
     app.get("/confirm", async (req, res) => {
 
-      console.log(req.cookies)
+      console.log(req.cookies.token)
+      console.log(req.query.email)
 
       // const email = req.query.email;
       // const query = { email: email };
