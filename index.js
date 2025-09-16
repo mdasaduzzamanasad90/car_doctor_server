@@ -10,7 +10,11 @@ const port = process.env.PORT || 3000;
 // middlewere
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      // "http://localhost:5173",
+      "https://car-doctor-server-project.web.app",
+      "https://car-doctor-server-project.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -40,6 +44,13 @@ async function run() {
       .collection("servicesconfirm");
     const products = client.db("car-doctor").collection("products");
 
+    // token add some option
+    const cookeoption = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV==="production"?true:false,
+      sameSite: process.env.NODE_ENV==="production"?"none":"strict"
+    };
+
     // token JWT
     app.post("/jwt", async (req, res) => {
       const userdata = req.body;
@@ -48,23 +59,12 @@ async function run() {
       });
       // console.log(userdata);
       // console.log(token);
-      res
-        .cookie("token", token, {
-          httpOnly: true,
-          secure: false,
-          // sameSite: "lax"
-        })
-        .send({ success: true });
+      res.cookie("token", token,cookeoption).send({ success: true });
     });
 
     // clear token jwt
     app.post("/logout", async (req, res) => {
-      res
-        .clearCookie("token", {
-          httpOnly: true,
-          secure: false,
-        })
-        .send({ success: true, message: "clear token" });
+      res.clearCookie("token",{...cookeoption,maxAge:0}).send({ success: true});
     });
 
     // read all services data on database Mongobd
